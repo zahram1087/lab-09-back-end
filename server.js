@@ -168,7 +168,7 @@ function getWeather(request, response) {
 //----------------------------------------------
 
 function getMovie(request, response) {
-  Weather.lookup(
+  Movie.lookup(
     {
       tableName: Movie.tableName,
 
@@ -198,21 +198,56 @@ function getMovie(request, response) {
     })
 
 }
+//----------------------------------------------
+// GET BUSINESSES
+//----------------------------------------------
 
+function getYelp(request, response) {
+  Business.lookup(
+    {
+      tableName: Business.tableName,
+
+      cacheMiss: function () {
+        const url = `https://api.yelp.com/v3/businesses/search?location=${request.query.data.search_query}`;
+        return superagent.get(url)
+          .then(result => {
+
+            const yelpSummaries = result.body.businesses.map(business => {
+              const summary = new Business(business);
+              summary.save(request.query.data.id);
+              return summary;
+            });
+            response.send(yelpSummaries);
+          })
+          .catch(error => handleError(error, response));
+      },
+      cacheHit: function (resultsArray) {
+        let ageOfResultsInDays = (Date.now() - resultsArray[0].created_at) / (1000 * 60 * 1440 * 30);
+        if (ageOfResultsInDays > 30) {
+          Movie.deleteByLocationId(Business.tableName, request.query.data.id);
+          this.cacheMiss();
+        }
+        else {
+          response.send(resultsArray);
+        }
+      }
+    })
+
+}
 //-----------------------------------------
 // handle YELP request
 
-function getYelp(request, response) {
-  const url = `https://api.yelp.com/v3/businesses/search?location=${request.query.data.search_query}`;
+// function getYelp(request, response) {
+//   const url = `https://api.yelp.com/v3/businesses/search?location=${request.query.data.search_query}`;
 
-  return superagent.get(url)
-    .set('Authorization', `Bearer ${process.env.YELP_API_KEY}`)
-    .then(result => {
-      const yelpSummaries = result.body.businesses.map(business => new Business(business));
-      response.send(yelpSummaries);
-    })
-    .catch(error => handleError(error, response));
-}
+//   return superagent.get(url)
+//     .set('Authorization', `Bearer ${process.env.YELP_API_KEY}`)
+//     .then(result => {
+//       const yelpSummaries = result.body.businesses.map(business => new Business(business));
+//       response.send(yelpSummaries);
+//     })
+//     .catch(error => handleError(error, response));
+// }
 
 //-----------------------------------------
 // handle MOVIE request
@@ -262,6 +297,27 @@ function Movie(movie) {
   this.created_at = Date.now();
 }
 
+
+function Business(business) {
+  this.tableName = 'businesses'
+  this.name = business.name;
+  this.image_url = business.image_url;
+  this.price = business.price;
+  this.rating = business.rating;
+  this.url = business.url;
+  this.created_at = Date.now();
+}
+
+Business.prototype =
+  {
+    save: function (location_id) {
+      const SQL = `INSERT INTO ${this.tableName} (name, image_url, price, rating, url, location_id) VALUES ($1, $2, $3, $4, $5, $6);`;
+      const values = [this.name, this.image_url, this.price, this.rating, this.url, location_id];
+
+      client.query(SQL, values);
+    }
+  };
+
 Movie.prototype =
   {
     save: function (location_id) {
@@ -286,6 +342,25 @@ Weather.prototype =
 // name of table
 Weather.tableName = 'weathers';
 Movie.tableName = 'movies';
+Business.tableName = 'businesses';
+
+Business.lookup = (options) => {
+  const SQL = `SELECT * FROM ${options.tableName} WHERE location_id=$1`;
+  const values = [options.query];
+
+  client.query(SQL, values)
+    .then(result => {
+      if (result.rowCount > 0) {
+        // something to send back to client
+        options.cacheHit(result.rows);
+      }
+      else {
+        // requesting data from the API
+        options.cacheMiss();
+      }
+    })
+    .catch(error => handleError(error));
+};
 
 Movie.lookup = (options) => {
   const SQL = `SELECT * FROM ${options.tableName} WHERE location_id=$1`;
@@ -323,6 +398,8 @@ Weather.lookup = (options) => {
     .catch(error => handleError(error));
 };
 
+
+
 function getLocation(request, response) {
   Location.lookupLocation({
     tableName: Location.tableName,
@@ -355,11 +432,4 @@ function getLocation(request, response) {
 
 
 
-function Business(business) {
-  this.name = business.name;
-  this.image_url = business.image_url;
-  this.price = business.price;
-  this.rating = business.rating;
-  this.url = business.url;
-}
 
