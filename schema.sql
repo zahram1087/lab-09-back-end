@@ -16,11 +16,16 @@ CREATE TABLE IF NOT EXISTS weathers
     location_id INTEGER NOT NULL REFERENCES locations(id)
 );
 
-CREATE TABLE IF NOT EXISTS movie
+CREATE TABLE IF NOT EXISTS movies
 (
     id SERIAL PRIMARY KEY,
-    forecast VARCHAR(255),
+    title VARCHAR(255),
+    overview VARCHAR(255),
     time VARCHAR(255),
-    created_at BIGINT,
+    average_votes NUMERIC,
+    image_url VARCHAR(255),
+    popularity VARCHAR(255),
+    released_on VARCHAR(255),
     location_id INTEGER NOT NULL REFERENCES locations(id)
 );
+

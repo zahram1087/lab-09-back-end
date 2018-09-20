@@ -163,6 +163,41 @@ function getWeather(request, response) {
 
 }
 
+//----------------------------------------------
+// GET MOVIE
+//----------------------------------------------
+
+function getMovie(request, response) {
+  Weather.lookup(
+    {
+      tableName: Movie.tableName,
+
+      cacheMiss: function () {
+        const url = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.THE_MOVIE_DB_API}&query=${request.query.data.search_query}`;
+        return superagent.get(url)
+          .then(result => {
+            const moviesSummaries = result.body.results.map(movie => {
+              const summary = new Movie(movie);
+              summary.save(request.query.data.id);
+              return summary;
+            });
+            response.send(moviesSummaries);
+          })
+          .catch(error => handleError(error, response));
+      },
+      cacheHit: function (resultsArray) {
+        let ageOfResultsInDays = (Date.now() - resultsArray[0].created_at) / (1000 * 60 * 1440);
+        if (ageOfResultsInDays > 30) {
+          Movie.deleteByLocationId(Movie.tableName, request.query.data.id);
+          this.cacheMiss();
+        }
+        else {
+          response.send(resultsArray);
+        }
+      }
+    })
+
+}
 
 //-----------------------------------------
 // handle YELP request
@@ -182,16 +217,16 @@ function getYelp(request, response) {
 //-----------------------------------------
 // handle MOVIE request
 
-function getMovie(request, response) {
-  const url = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.THE_MOVIE_DB_API}&query=${request.query.data.search_query}`;
+// function getMovie(request, response) {
+//   const url = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.THE_MOVIE_DB_API}&query=${request.query.data.search_query}`;
 
-  return superagent.get(url)
-    .then(result => {
-      const moviesSummaries = result.body.results.map(movie => new Movie(movie));
-      response.send(moviesSummaries);
-    })
-    .catch(error => handleError(error, response));
-}
+//   return superagent.get(url)
+//     .then(result => {
+//       const moviesSummaries = result.body.results.map(movie => new Movie(movie));
+//       response.send(moviesSummaries);
+//     })
+//     .catch(error => handleError(error, response));
+// }
 
 
 //-----------------------------------------
@@ -215,11 +250,33 @@ function Weather(day) {
   this.created_at = Date.now();
 }
 
+
+function Movie(movie) {
+  this.tableName = 'movies'
+  this.title = movie.title;
+  this.overview = movie.overview;
+  this.average_votes = movie.vote_average;
+  this.image_url = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
+  this.popularity = movie.popularity;
+  this.released_on = movie.release_date;
+  this.created_at = Date.now();
+}
+
+Movie.prototype =
+  {
+    save: function (location_id) {
+      const SQL = `INSERT INTO ${this.tableName} (title, overview, average_votes, image_url, popularity, released_on, location_id) VALUES ($1, $2, $3, $4, $5, $6, $7);`;
+      const values = [this.title, this.overview, this.average_votes, this.image_url, this.popularity, this.released_on, location_id];
+
+      client.query(SQL, values);
+    }
+  };
+
 Weather.prototype =
   {
     // same as Weather.prototype.save()
     save: function (location_id) {
-      const SQL = `INSERT INTO ${this.tableName} (forecast, time, location_id) VALUES ($1, $2, $3 $4);`;
+      const SQL = `INSERT INTO ${this.tableName} (forecast, time, created_at, location_id) VALUES ($1, $2, $3,$4);`;
       const values = [this.forecast, this.time, this.created_at, location_id];
 
       client.query(SQL, values);
@@ -228,6 +285,25 @@ Weather.prototype =
 
 // name of table
 Weather.tableName = 'weathers';
+Movie.tableName = 'movies';
+
+Movie.lookup = (options) => {
+  const SQL = `SELECT * FROM ${options.tableName} WHERE location_id=$1`;
+  const values = [options.query];
+
+  client.query(SQL, values)
+    .then(result => {
+      if (result.rowCount > 0) {
+        // something to send back to client
+        options.cacheHit(result.rows);
+      }
+      else {
+        // requesting data from the API
+        options.cacheMiss();
+      }
+    })
+    .catch(error => handleError(error));
+};
 
 Weather.lookup = (options) => {
   const SQL = `SELECT * FROM ${options.tableName} WHERE location_id=$1`;
@@ -287,11 +363,3 @@ function Business(business) {
   this.url = business.url;
 }
 
-function Movie(movie) {
-  this.title = movie.title;
-  this.overview = movie.overview;
-  this.average_votes = movie.vote_average;
-  this.image_url = `https://image.tmdb.org/t/p/w500${movie.poster_path}`;
-  this.popularity = movie.popularity;
-  this.released_on = movie.release_date;
-}
