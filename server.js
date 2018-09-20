@@ -210,6 +210,7 @@ function getYelp(request, response) {
       cacheMiss: function () {
         const url = `https://api.yelp.com/v3/businesses/search?location=${request.query.data.search_query}`;
         return superagent.get(url)
+          .set('Authorization', `Bearer ${process.env.YELP_API_KEY}`)
           .then(result => {
 
             const yelpSummaries = result.body.businesses.map(business => {
