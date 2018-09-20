@@ -29,3 +29,13 @@ CREATE TABLE IF NOT EXISTS movies
     location_id INTEGER NOT NULL REFERENCES locations(id)
 );
 
+CREATE TABLE IF NOT EXISTS businesses
+(
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
+    image_url VARCHAR(255),
+    price NUMERIC,
+    rating VARCHAR(255),
+    url VARCHAR(1024),
+    location_id INTEGER NOT NULL REFERENCES locations(id)
+);
