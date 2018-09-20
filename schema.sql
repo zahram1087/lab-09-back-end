@@ -15,3 +15,12 @@ CREATE TABLE IF NOT EXISTS weathers
     created_at BIGINT,
     location_id INTEGER NOT NULL REFERENCES locations(id)
 );
+
+CREATE TABLE IF NOT EXISTS movie
+(
+    id SERIAL PRIMARY KEY,
+    forecast VARCHAR(255),
+    time VARCHAR(255),
+    created_at BIGINT,
+    location_id INTEGER NOT NULL REFERENCES locations(id)
+);
