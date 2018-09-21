@@ -98,9 +98,24 @@ Location.prototype = {
 // Functions to run on recieving requests
 // ALL API KEYS HAVE TO BE IN .env WITH SAME NAME
 
+//-----------------------------------------
+// handle LOCATION request
 
-
-
+function searchToLatLong(request, response) {
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${request.query.data}&key=${process.env.GOOGLE_API_KEY}`;
+  return superagent.get(url)
+    .then(result => {
+      const locationResult =
+      {
+        search_query: request.query.data,
+        formatted_query: result.body.results[0].formatted_address,
+        latitude: result.body.results[0].geometry.location.lat,
+        longitude: result.body.results[0].geometry.location.lng,
+      };
+      response.send(locationResult);
+    })
+    .catch(error => handleError(error));
+}
 
 //-----------------------------------------
 // handle WEATHER request
@@ -220,6 +235,34 @@ function getYelp(request, response) {
     })
 
 }
+//-----------------------------------------
+// handle YELP request
+
+// function getYelp(request, response) {
+//   const url = `https://api.yelp.com/v3/businesses/search?location=${request.query.data.search_query}`;
+
+//   return superagent.get(url)
+//     .set('Authorization', `Bearer ${process.env.YELP_API_KEY}`)
+//     .then(result => {
+//       const yelpSummaries = result.body.businesses.map(business => new Business(business));
+//       response.send(yelpSummaries);
+//     })
+//     .catch(error => handleError(error, response));
+// }
+
+//-----------------------------------------
+// handle MOVIE request
+
+// function getMovie(request, response) {
+//   const url = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.THE_MOVIE_DB_API}&query=${request.query.data.search_query}`;
+
+//   return superagent.get(url)
+//     .then(result => {
+//       const moviesSummaries = result.body.results.map(movie => new Movie(movie));
+//       response.send(moviesSummaries);
+//     })
+//     .catch(error => handleError(error, response));
+// }
 
 
 //-----------------------------------------
@@ -302,29 +345,77 @@ Weather.tableName = 'weathers';
 Movie.tableName = 'movies';
 Business.tableName = 'businesses';
 
-Weather.lookup = lookup;
-Movie.lookup = lookup;
-Business.lookup = lookup;
+// Business.lookup = (options) => {
+//   const SQL = `SELECT * FROM ${options.tableName} WHERE location_id=$1`;
+//   const values = [options.query];
+
+//   client.query(SQL, values)
+//     .then(result => {
+//       if (result.rowCount > 0) {
+//         // something to send back to client
+//         options.cacheHit(result.rows);
+//       }
+//       else {
+//         // requesting data from the API
+//         options.cacheMiss();
+//       }
+//     })
+//     .catch(error => handleError(error));
+// };
+
+// Movie.lookup = (options) => {
+//   const SQL = `SELECT * FROM ${options.tableName} WHERE location_id=$1`;
+//   const values = [options.query];
+
+//   client.query(SQL, values)
+//     .then(result => {
+//       if (result.rowCount > 0) {
+//         // something to send back to client
+//         options.cacheHit(result.rows);
+//       }
+//       else {
+//         // requesting data from the API
+//         options.cacheMiss();
+//       }
+//     })
+//     .catch(error => handleError(error));
+// };
+
+// Weather.lookup = (options) => {
+//   const SQL = `SELECT * FROM ${options.tableName} WHERE location_id=$1`;
+//   const values = [options.query];
+
+//   client.query(SQL, values)
+//     .then(result => {
+//       if (result.rowCount > 0) {
+//         // something to send back to client
+//         options.cacheHit(result.rows);
+//       }
+//       else {
+//         // requesting data from the API
+//         options.cacheMiss();
+//       }
+//     })
+//     .catch(error => handleError(error));
+// };
 
 
-function lookup(options) {
-  const SQL = `SELECT * FROM ${options.tableName} WHERE location_id=$1`;
-  const values = [options.query];
+
+function lookup (options) {
+  const SQL = `SELECT * FROM ${options.tableName} WHERE location_id=$1;`;
+  const values = [options.location,options.weather, options.business, options.movie];
 
   client.query(SQL, values)
     .then(result => {
-      if (result.rowCount > 0) {
-        // something to send back to client
+      // if there is more than one record in the database, pass the array of objects as an argument to the cacheHit method
+      if(result.rowCount > 0) {
         options.cacheHit(result.rows);
-      }
-      else {
-        // requesting data from the API
+      } else {
         options.cacheMiss();
       }
     })
     .catch(error => handleError(error));
 }
-
 
 
 function getLocation(request, response) {
@@ -354,9 +445,3 @@ function getLocation(request, response) {
     }
   })
 }
-
-
-
-
-
-
