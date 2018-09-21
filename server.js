@@ -274,15 +274,17 @@ function handleError(err, res) {
 // constructors
 
 function Meetup(meetup){
+  console.log(meetup, 'meetup');
   this.tableName = 'meetups'
   this.link = meetup.link;
-  this.name = meetup.name;
-  this.creation_date = meetup.local_date;
-  this.host = meetup.venue.name;
+  this.name = meetup.group.name;
+  this.creation_date = new Date(meetup.events[1].created).toString().slice(0,15);
+  this.host = meetup.group.who;
   this.created_at = Date.now();
 }
 
 function Weather(day) {
+  // console.log(day, 'day');
   this.tableName = 'weathers'
   this.time = new Date(day.time * 1000).toString().slice(0, 15);
   this.forecast = day.summary;
@@ -291,6 +293,7 @@ function Weather(day) {
 
 
 function Movie(movie) {
+  // console.log(movie, 'movie');
   this.tableName = 'movies'
   this.title = movie.title;
   this.overview = movie.overview;
@@ -303,6 +306,7 @@ function Movie(movie) {
 
 
 function Business(business) {
+  // console.log(business, 'business');
   this.tableName = 'businesses'
   this.name = business.name;
   this.image_url = business.image_url;
