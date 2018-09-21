@@ -39,3 +39,13 @@ CREATE TABLE IF NOT EXISTS businesses
     url VARCHAR(1024),
     location_id INTEGER NOT NULL REFERENCES locations(id)
 );
+
+CREATE TABLE IF NOT EXISTS meetups
+(
+    id SERIAL PRIMARY KEY,
+    link VARCHAR(255),
+    name VARCHAR(255),
+    creation_date VARCHAR(255),
+    host VARCHAR(1024),
+    location_id INTEGER NOT NULL REFERENCES locations(id)
+);
