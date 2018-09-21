@@ -30,6 +30,7 @@ app.get('/location', getLocation); //need to change to getLocation //searchToLat
 app.get('/weather', getWeather);
 app.get('/yelp', getYelp);
 app.get('/movies', getMovie);
+app.get('/meetup', getMeetup);
 
 // running server on a PORT and console.log state
 app.listen(PORT, () => console.log(`listening on ${PORT}`));
@@ -147,6 +148,43 @@ function getWeather(request, response) {
     })
 
 }
+//GET MEETUP
+
+function getMeetup(request, response) {
+  Meetup.lookup(
+    {
+      tableName: Meetup.tableName,
+
+      cacheMiss: function () {
+        const url = `https://api.meetup.com//find/upcoming_events?key=${process.env.MEET_UP_API}&sign=true`;
+        return superagent.get(url)
+          .then(result => {
+
+            
+            console.log(result);
+            const meetupSummaries = result.body.daily.data.map(day => {
+              const summary = new Meetup(day);
+              summary.save(request.query.data.id);
+              return summary;
+            });
+            response.send(meetupSummaries);
+          })
+          .catch(error => handleError(error, response));
+      },
+      cacheHit: function (resultsArray) {
+        let ageOfResultsInMinutes = (Date.now() - resultsArray[0].created_at) / (1000 * 60 * 1440);
+        if (ageOfResultsInMinutes > 30) {
+          Meetup.deleteByLocationId(Meetup.tableName, request.query.data.id);
+          this.cacheMiss();
+        }
+        else {
+          response.send(resultsArray);
+        }
+      }
+    })
+
+}
+
 
 //----------------------------------------------
 // GET MOVIE
@@ -235,8 +273,18 @@ function handleError(err, res) {
 // helping functions for a working with a data
 // constructors
 
+function Meetup(meetup){
+  console.log(meetup, 'meetup');
+  this.tableName = 'meetups'
+  this.link = meetup.link;
+  this.name = meetup.group.name;
+  this.creation_date = new Date(meetup.events[1].created).toString().slice(0,15);
+  this.host = meetup.group.who;
+  this.created_at = Date.now();
+}
 
 function Weather(day) {
+  // console.log(day, 'day');
   this.tableName = 'weathers'
   this.time = new Date(day.time * 1000).toString().slice(0, 15);
   this.forecast = day.summary;
@@ -245,6 +293,7 @@ function Weather(day) {
 
 
 function Movie(movie) {
+  // console.log(movie, 'movie');
   this.tableName = 'movies'
   this.title = movie.title;
   this.overview = movie.overview;
@@ -257,6 +306,7 @@ function Movie(movie) {
 
 
 function Business(business) {
+  // console.log(business, 'business');
   this.tableName = 'businesses'
   this.name = business.name;
   this.image_url = business.image_url;
@@ -265,6 +315,16 @@ function Business(business) {
   this.url = business.url;
   this.created_at = Date.now();
 }
+
+Meetup.prototype =
+  {
+    save: function (location_id) {
+      const SQL = `INSERT INTO ${this.tableName} (link, name, creation_date, host, location_id) VALUES ($1, $2, $3, $4, $5);`;
+      const values = [this.link, this.name, this.creation_date, this.host, location_id];
+
+      client.query(SQL, values);
+    }
+  };
 
 Business.prototype =
   {
@@ -301,10 +361,12 @@ Weather.prototype =
 Weather.tableName = 'weathers';
 Movie.tableName = 'movies';
 Business.tableName = 'businesses';
+Meetup.tableName = 'meetups';
 
 Weather.lookup = lookup;
 Movie.lookup = lookup;
 Business.lookup = lookup;
+Meetup.lookup = lookup;
 
 
 function lookup(options) {
