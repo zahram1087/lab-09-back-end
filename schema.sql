@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS businesses
     id SERIAL PRIMARY KEY,
     name VARCHAR(255),
     image_url VARCHAR(255),
-    price NUMERIC,
+    price VARCHAR(255),
     rating VARCHAR(255),
     url VARCHAR(255),
     location_id INTEGER NOT NULL REFERENCES locations(id)

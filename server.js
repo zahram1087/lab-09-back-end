@@ -156,10 +156,13 @@ function getMeetup(request, response) {
       tableName: Meetup.tableName,
 
       cacheMiss: function () {
-        const url = `https://api.meetup.com//find/upcoming_events?key=${process.env.MEET_UP_API}&sign=true`;
+        // const url =`https://api.meetup.com/find/upcoming_events?&sign=true&photo-host=public&lon=${request.query.data.longitude}&page=20&lat=${request.query.data.latitude}&${process.env.MEET_UP_API_KEY}`;
+
+        const url = `https://api.meetup.com//find/upcoming_events?key=${process.env.MEET_UP_API_KEY}&sign=true`;
         return superagent.get(url)
           .then(result => {
 
+            console.log('HEREEE>>>>>>>>>>>>>>>>');
             
             console.log(result);
             const meetupSummaries = result.body.daily.data.map(day => {
@@ -278,7 +281,7 @@ function Meetup(meetup){
   this.tableName = 'meetups'
   this.link = meetup.link;
   this.name = meetup.group.name;
-  this.creation_date = new Date(meetup.events[1].created).toString().slice(0,15);
+  this.creation_date = new Date(meetup.group.created).toString().slice(0,15);
   this.host = meetup.group.who;
   this.created_at = Date.now();
 }
