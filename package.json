@@ -1,7 +1,7 @@
 {
-  "name": "lab-08-back-end",
+  "name": "lab-09-back-end",
   "version": "1.0.0",
-  "description": "",
+  "description": "**Author**: Your Name Goes Here **Version**: 1.0.0 (increment the patch/fix version number if you make more commits past your first submission)",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -9,15 +9,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zahram1087/lab-08-back-end.git"
+    "url": "git+https://github.com/zahram1087/lab-09-back-end.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/zahram1087/lab-08-back-end/issues"
+    "url": "https://github.com/zahram1087/lab-09-back-end/issues"
   },
-  "homepage": "https://github.com/zahram1087/lab-08-back-end#readme",
+  "homepage": "https://github.com/zahram1087/lab-09-back-end#readme",
   "dependencies": {
     "cors": "^2.8.4",
     "dotenv": "^6.0.0",

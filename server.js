@@ -107,10 +107,10 @@ Location.prototype = {
 
 //  Clear the results for a location if they are stale
 // This is dynamic because it is able to accept a specific table and city as arguments
-function deleteByLocationId(table, city) {
-  const SQL = `DELETE from ${table} WHERE location_id=${city};`;
-  return client.query(SQL);
-}
+// function deleteByLocationId(table, city) {
+//   const SQL = `DELETE from ${table} WHERE location_id=${city};`;
+//   return client.query(SQL);
+// }
 
 //----------------------------------------------
 // GET WEATHER
